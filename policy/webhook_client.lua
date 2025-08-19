@@ -2,8 +2,6 @@
 Webhook client for sending delivery status to Django
 ]]
 
-local kumo = require 'kumo'
-
 -- Django webhook configuration
 local DJANGO_WEBHOOK_URL = os.getenv('DJANGO_WEBHOOK_URL') or 'http://localhost:8000/api/kumomta/webhook/'
 local WEBHOOK_SECRET = os.getenv('KUMOMTA_WEBHOOK_SECRET') or 'your-secret-key'

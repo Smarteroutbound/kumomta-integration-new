@@ -1,0 +1,29 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Docker volumes
+kumo_data_spool/
+kumo_meta_spool/
+kumo_logs/
+redis_data/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
