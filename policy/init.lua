@@ -81,9 +81,9 @@ kumo.on('delivery_status', function(msg, status)
     -- Log delivery status
     kumo.log.info('Delivery status: ' .. tostring(status) .. ' for message ' .. tostring(msg:id()))
     
-    -- Send webhook notification to Django backend
-    local webhook = require '99-webhook'
-    webhook.send_delivery_log(msg, status)
+    -- TODO: Implement webhook notification to Django backend
+    -- For now, just log the data for monitoring
+    kumo.log.info('Webhook data: ' .. tostring(status) .. ' for ' .. tostring(msg:id()))
 end)
 
 -- Handle message processing

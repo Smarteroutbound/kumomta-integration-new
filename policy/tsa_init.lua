@@ -3,8 +3,6 @@ Traffic Shaping Automation (TSA) Daemon Configuration
 Handles automatic traffic shaping adjustments based on delivery feedback
 ]]
 
-local kumo = require 'kumo'
-
 kumo.on('tsa_init', function()
   -- Configure TSA daemon for cold email optimization
   kumo.configure_bounce_classifier {
