@@ -31,11 +31,10 @@ kumo.on('init', function()
 		relay_hosts = { '127.0.0.1' },
 	}
 
-	-- Configure logging
+	-- Configure logging with correct field names
 	kumo.configure_local_logs {
 		log_dir = '/var/log/kumomta',
-		max_size = '100M',
-		max_files = 10,
+		max_file_size = '100M',
 	}
 
 	-- Configure Redis throttles for rate limiting
