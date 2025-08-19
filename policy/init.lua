@@ -6,9 +6,6 @@ Handles IP rotation, delivery, and monitoring
 ########################################################
 ]]
 
--- Load Redis configuration module
-local redis_config = require 'redis_config'
-
 -- START SETUP
 
 -- END SETUP
@@ -17,8 +14,10 @@ local redis_config = require 'redis_config'
 
 -- Called On Startup, handles initial configuration
 kumo.on('init', function()
-    -- Configure Redis first
-    redis_config.setup_redis()
+    -- Configure Redis throttles directly
+    kumo.configure_redis_throttles { 
+        node = 'redis://redis:6379/' 
+    }
     
     -- Define the default "data" spool location; this is where
     -- message bodies will be stored.
