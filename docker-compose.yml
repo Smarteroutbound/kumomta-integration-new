@@ -30,7 +30,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
-    command: ["/opt/kumomta/sbin/kumod", "--policy", "/opt/kumomta/etc/policy/init.lua", "--user", "kumod"]
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod"]
 
 volumes:
   redis_data:

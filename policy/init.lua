@@ -3,57 +3,59 @@ KumoMTA Cold Email MTA Configuration
 Production-ready policy for Smarter Outbound
 ]]
 
+local kumo = require 'kumo'
+
 -- Initialize KumoMTA - this is the ONLY event handler we need for basic setup
 kumo.on('init', function()
-    -- Define spools for message storage
-    kumo.define_spool {
-        name = 'data',
-        path = '/var/spool/kumomta/data',
-        kind = 'RocksDB',
-    }
+	-- Define spools for message storage
+	kumo.define_spool {
+		name = 'data',
+		path = '/var/spool/kumomta/data',
+		kind = 'RocksDB',
+	}
 
-    kumo.define_spool {
-        name = 'meta',
-        path = '/var/spool/kumomta/meta',
-        kind = 'RocksDB',
-    }
+	kumo.define_spool {
+		name = 'meta',
+		path = '/var/spool/kumomta/meta',
+		kind = 'RocksDB',
+	}
 
-    -- Start SMTP listeners
-    kumo.start_esmtp_listener {
-        listen = '0.0.0.0:25',
-        relay_hosts = { '127.0.0.1' },
-    }
+	-- Start SMTP listeners
+	kumo.start_esmtp_listener {
+		listen = '0.0.0.0:25',
+		relay_hosts = { '127.0.0.1' },
+	}
 
-    kumo.start_esmtp_listener {
-        listen = '0.0.0.0:587',
-        relay_hosts = { '127.0.0.1' },
-    }
+	kumo.start_esmtp_listener {
+		listen = '0.0.0.0:587',
+		relay_hosts = { '127.0.0.1' },
+	}
 
-    -- Configure logging
-    kumo.configure_local_logs {
-        log_dir = '/var/log/kumomta',
-        max_size = '100M',
-        max_files = 10,
-    }
+	-- Configure logging
+	kumo.configure_local_logs {
+		log_dir = '/var/log/kumomta',
+		max_size = '100M',
+		max_files = 10,
+	}
 
-    -- Configure Redis throttles for rate limiting
-    kumo.configure_redis_throttles {
-        node = 'redis://redis:6379/'
-    }
+	-- Configure Redis throttles for rate limiting
+	kumo.configure_redis_throttles {
+		node = 'redis://redis:6379/'
+	}
 
-    print("KumoMTA initialized successfully")
+	print("KumoMTA initialized successfully")
 end)
 
 -- Handle incoming SMTP messages
 kumo.on('smtp_message_received', function(msg)
-    -- Apply SMTP smuggling protection
-    msg:check_fix_conformance()
-    
-    -- Log the message
-    kumo.log.info('Message received from ' .. tostring(msg:from()) .. ' to ' .. tostring(msg:to()))
-    
-    -- Accept the message for delivery
-    return msg:accept()
+	-- Apply SMTP smuggling protection
+	msg:check_fix_conformance()
+	
+	-- Log the message
+	kumo.log.info('Message received from ' .. tostring(msg:from()) .. ' to ' .. tostring(msg:to()))
+	
+	-- Accept the message for delivery
+	return msg:accept()
 end)
 
 print("KumoMTA policy loaded successfully")
