@@ -3,12 +3,9 @@ KumoMTA Cold Email MTA Configuration
 Production-ready policy for Smarter Outbound
 ]]
 
--- This is the minimal working configuration
--- All kumo calls must be inside event handlers
-
--- Initialize KumoMTA
+-- Initialize KumoMTA - this is the ONLY event handler we need for basic setup
 kumo.on('init', function()
-    -- Define spools
+    -- Define spools for message storage
     kumo.define_spool {
         name = 'data',
         path = '/var/spool/kumomta/data',
@@ -39,7 +36,7 @@ kumo.on('init', function()
         max_files = 10,
     }
 
-    -- Configure Redis throttles
+    -- Configure Redis throttles for rate limiting
     kumo.configure_redis_throttles {
         node = 'redis://redis:6379/'
     }
@@ -47,10 +44,15 @@ kumo.on('init', function()
     print("KumoMTA initialized successfully")
 end)
 
--- Handle incoming messages
+-- Handle incoming SMTP messages
 kumo.on('smtp_message_received', function(msg)
+    -- Apply SMTP smuggling protection
     msg:check_fix_conformance()
+    
+    -- Log the message
     kumo.log.info('Message received from ' .. tostring(msg:from()) .. ' to ' .. tostring(msg:to()))
+    
+    -- Accept the message for delivery
     return msg:accept()
 end)
 
