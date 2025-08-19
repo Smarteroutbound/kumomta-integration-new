@@ -1,0 +1,26 @@
+# KumoMTA Basic Traffic Shaping
+# Simple limits - sequencers handle warmup and detailed rate limiting
+
+# Default limits for all domains
+["*"]
+connection_limit = 20
+max_deliveries_per_connection = 100
+max_message_rate = "1000/hr"  # High limit - sequencers control actual rate
+max_connection_rate = "20/min"
+
+# Major ISPs - Standard limits
+["gmail.com"]
+connection_limit = 15
+max_deliveries_per_connection = 50
+
+["yahoo.com"]
+connection_limit = 10
+max_deliveries_per_connection = 30
+
+["outlook.com"]
+connection_limit = 15
+max_deliveries_per_connection = 40
+
+["hotmail.com"]
+connection_limit = 15
+max_deliveries_per_connection = 40

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  kumod-cold-email:
+    image: ghcr.io/kumocorp/kumomta:main
+    container_name: kumod-cold-email
+    env_file: ./.env
+    volumes:
+      - ./policy:/opt/kumomta/etc/policy
+    ports:
+      - "25:25"
+      - "587:587"
+      - "2025:2025"
+    restart: unless-stopped
