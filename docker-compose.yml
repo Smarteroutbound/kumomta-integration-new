@@ -1,14 +1,39 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: kumo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
   kumod-cold-email:
     image: ghcr.io/kumocorp/kumomta:main
     container_name: kumod-cold-email
-    env_file: ./.env
     volumes:
       - ./policy:/opt/kumomta/etc/policy
+      - kumo_data_spool:/var/spool/kumomta/data
+      - kumo_meta_spool:/var/spool/kumomta/meta
+      - kumo_logs:/var/log/kumomta
     ports:
       - "25:25"
       - "587:587"
       - "2025:2025"
+    depends_on:
+      - redis
     restart: unless-stopped
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
+    command: ["/opt/kumomta/sbin/kumod", "--policy", "/opt/kumomta/etc/policy/init.lua", "--user", "kumod"]
+
+volumes:
+  redis_data:
+  kumo_data_spool:
+  kumo_meta_spool:
+  kumo_logs:
