@@ -1,0 +1,412 @@
+version: '3.8'
+
+# Horizontal Scaling Configuration for KumoMTA
+# This configuration allows scaling KumoMTA instances for high-volume email delivery
+
+services:
+  # Redis for shared state and throttling (scaled)
+  redis:
+    image: redis:7-alpine
+    container_name: kumo-redis-cluster
+    ports:
+      - "6379:6379"
+      - "6380:6380"
+      - "6381:6381"
+    volumes:
+      - redis_data_0:/data
+      - redis_data_1:/data
+      - redis_data_2:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 4gb --maxmemory-policy allkeys-lru --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # KumoMTA Instance 1
+  kumod-1:
+    image: ghcr.io/kumocorp/kumomta:main
+    container_name: kumod-enterprise-1
+    volumes:
+      - ./policy:/opt/kumomta/etc/policy
+      - kumo_data_spool_1:/var/spool/kumomta/data
+      - kumo_meta_spool_1:/var/spool/kumomta/meta
+      - kumo_logs_1:/var/log/kumomta
+    ports:
+      - "8025:25"
+      - "80587:587"
+      - "8001:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      tsa-daemon:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
+      - KUMO_LOG_LEVEL=info
+      - KUMO_PERFORMANCE_MODE=high
+      - KUMO_INSTANCE_ID=1
+      - KUMO_CLUSTER_MODE=enabled
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod --instance-id 1"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  # KumoMTA Instance 2
+  kumod-2:
+    image: ghcr.io/kumocorp/kumomta:main
+    container_name: kumod-enterprise-2
+    volumes:
+      - ./policy:/opt/kumomta/etc/policy
+      - kumo_data_spool_2:/var/spool/kumomta/data
+      - kumo_meta_spool_2:/var/spool/kumomta/meta
+      - kumo_logs_2:/var/log/kumomta
+    ports:
+      - "8125:25"
+      - "81587:587"
+      - "8002:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      tsa-daemon:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
+      - KUMO_LOG_LEVEL=info
+      - KUMO_PERFORMANCE_MODE=high
+      - KUMO_INSTANCE_ID=2
+      - KUMO_CLUSTER_MODE=enabled
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod --instance-id 2"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  # KumoMTA Instance 3
+  kumod-3:
+    image: ghcr.io/kumocorp/kumomta:main
+    container_name: kumod-enterprise-3
+    volumes:
+      - ./policy:/opt/kumomta/etc/policy
+      - kumo_data_spool_3:/var/spool/kumomta/data
+      - kumo_meta_spool_3:/var/spool/kumomta/meta
+      - kumo_logs_3:/var/log/kumomta
+    ports:
+      - "8225:25"
+      - "82587:587"
+      - "8003:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      tsa-daemon:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
+      - KUMO_LOG_LEVEL=info
+      - KUMO_PERFORMANCE_MODE=high
+      - KUMO_INSTANCE_ID=3
+      - KUMO_CLUSTER_MODE=enabled
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod --instance-id 3"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  # Traffic Shaping Automation (TSA) daemon (scaled)
+  tsa-daemon:
+    image: ghcr.io/kumocorp/kumomta:main
+    container_name: kumo-tsa-daemon-scaled
+    command: runuser -u kumod -- /opt/kumomta/sbin/tsa-daemon --policy /opt/kumomta/etc/policy/tsa_init.lua --cluster-mode
+    volumes:
+      - ./policy:/opt/kumomta/etc/policy
+      - tsa_data:/var/lib/tsa
+      - tsa_logs:/var/log/tsa
+    ports:
+      - "8008:8008"
+    restart: unless-stopped
+    environment:
+      - TSA_LOG_LEVEL=info
+      - TSA_DATA_DIR=/var/lib/tsa
+      - TSA_LOG_DIR=/var/log/tsa
+      - TSA_CLUSTER_MODE=enabled
+      - TSA_INSTANCE_COUNT=3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Load Balancer (HAProxy)
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: kumo-haproxy
+    ports:
+      - "25:25"
+      - "587:587"
+      - "8000:8000"
+      - "8080:8080"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - haproxy_logs:/var/log/haproxy
+    depends_on:
+      - kumod-1
+      - kumod-2
+      - kumod-3
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Prometheus for metrics collection (scaled)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kumo-prometheus-scaled
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.scale.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    restart: unless-stopped
+    depends_on:
+      - kumod-1
+      - kumod-2
+      - kumod-3
+      - tsa-daemon
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Grafana for dashboards (scaled)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kumo-grafana-scaled
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  # Alertmanager for alerting (scaled)
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: kumo-alertmanager-scaled
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: kumo-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  # Redis Exporter for Redis metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: kumo-redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    restart: unless-stopped
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+volumes:
+  # Redis cluster volumes
+  redis_data_0:
+  redis_data_1:
+  redis_data_2:
+  
+  # KumoMTA instance volumes
+  kumo_data_spool_1:
+  kumo_meta_spool_1:
+  kumo_logs_1:
+  kumo_data_spool_2:
+  kumo_meta_spool_2:
+  kumo_logs_2:
+  kumo_data_spool_3:
+  kumo_meta_spool_3:
+  kumo_logs_3:
+  
+  # TSA volumes
+  tsa_data:
+  tsa_logs:
+  
+  # Load balancer volumes
+  haproxy_logs:
+  
+  # Monitoring volumes
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
+
+networks:
+  default:
+    name: kumo-scale-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

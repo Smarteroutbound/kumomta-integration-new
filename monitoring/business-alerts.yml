@@ -6,15 +6,104 @@ groups:
         for: 2m
         annotations:
           summary: "Email delivery rate dropped below 50/min"
+          description: "Critical: Email delivery performance has degraded significantly"
+          severity: "critical"
+          business_impact: "Client email campaigns may be failing"
           
       - alert: BounceRateHigh
         expr: rate(kumomta_bounced_total[5m]) / rate(kumomta_attempted_total[5m]) > 0.1
         for: 5m
         annotations:
           summary: "Bounce rate above 10%"
+          description: "High bounce rate detected - may affect IP reputation"
+          severity: "warning"
+          business_impact: "Potential deliverability issues for all clients"
           
       - alert: IPReputationDegraded
         expr: kumomta_ip_reputation_score < 70
         for: 1m
         annotations:
           summary: "IP reputation score below 70"
+          description: "IP reputation has degraded significantly"
+          severity: "critical"
+          business_impact: "All emails from this IP may be blocked"
+
+  - name: campaign_performance
+    rules:
+      - alert: CampaignDeliveryFailure
+        expr: rate(kumomta_campaign_delivery_failures_total[10m]) > 0.05
+        for: 5m
+        annotations:
+          summary: "Campaign delivery failure rate above 5%"
+          description: "Multiple campaigns experiencing delivery issues"
+          severity: "warning"
+          business_impact: "Client campaign success rates declining"
+          
+      - alert: SequencePerformanceDrop
+        expr: rate(kumomta_sequence_delivery_rate[15m]) < 0.85
+        for: 10m
+        annotations:
+          summary: "Email sequence performance below 85%"
+          description: "Email sequences not performing as expected"
+          severity: "warning"
+          business_impact: "Client engagement rates may be affected"
+
+  - name: user_experience
+    rules:
+      - alert: HighUserComplaintRate
+        expr: rate(kumomta_complaints_total[1h]) > 0.01
+        for: 30m
+        annotations:
+          summary: "User complaint rate above 1%"
+          description: "High rate of user complaints detected"
+          severity: "critical"
+          business_impact: "Risk of account suspension and reputation damage"
+          
+      - alert: ClientDomainIssues
+        expr: count(kumomta_domain_delivery_issues_total) > 5
+        for: 15m
+        annotations:
+          summary: "Multiple client domains experiencing issues"
+          description: "Several client domains have delivery problems"
+          severity: "warning"
+          business_impact: "Multiple clients may be affected"
+
+  - name: revenue_impact
+    rules:
+      - alert: ServiceDegradation
+        expr: rate(kumomta_service_errors_total[5m]) > 0.1
+        for: 3m
+        annotations:
+          summary: "Service degradation detected"
+          description: "High rate of service errors affecting delivery"
+          severity: "critical"
+          business_impact: "Client satisfaction and retention at risk"
+          
+      - alert: CapacityThreshold
+        expr: kumomta_queue_depth > 10000
+        for: 5m
+        annotations:
+          summary: "Queue depth above 10,000 emails"
+          description: "System approaching capacity limits"
+          severity: "warning"
+          business_impact: "May need to scale infrastructure"
+
+  - name: competitive_intelligence
+    rules:
+      - alert: DeliverabilityBelowIndustry
+        expr: rate(kumomta_delivered_total[1h]) / rate(kumomta_sent_total[1h]) < 0.92
+        for: 30m
+        annotations:
+          summary: "Deliverability below industry standard (92%)"
+          description: "Email deliverability below competitive benchmarks"
+          severity: "warning"
+          business_impact: "Competitive disadvantage in market"
+          
+      - alert: ResponseTimeDegraded
+        expr: histogram_quantile(0.95, rate(kumomta_delivery_duration_seconds_bucket[5m])) > 30
+        for: 10m
+        annotations:
+          summary: "95th percentile delivery time above 30 seconds"
+          description: "Email delivery performance below SLA"
+          severity: "warning"
+          business_impact: "Client experience may be degraded"
