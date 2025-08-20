@@ -1,30 +1,405 @@
-# Traffic Shaping Configuration for KumoMTA
-# This file configures rate limiting and traffic shaping rules
+# Enterprise-Grade Traffic Shaping Configuration for KumoMTA
+# This file configures advanced rate limiting, traffic shaping, and automation rules
 
+# Global default settings
 [global]
 # Global rate limits
-max_connections_per_second = 100
-max_messages_per_second = 1000
+max_connections_per_second = 200
+max_messages_per_second = 2000
+max_concurrent_connections = 1000
+default_connection_limit = 10
+default_max_deliveries_per_connection = 100
+default_idle_timeout = "60s"
+default_enable_tls = "Opportunistic"
+default_consecutive_connection_failures_before_delay = 100
 
-[domains]
-# Domain-specific rate limits
+# Provider-specific configurations with automation
+[provider."google"]
+match = [
+    {MXSuffix = ".google.com"},
+    {MXSuffix = ".googlemail.com"},
+    {MXSuffix = ".gmail.com"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 50
+provider_connection_limit = 5
+consecutive_connection_failures_before_delay = 5
+max_connection_rate = "10/min"
+max_message_rate = "100/s"
+idle_timeout = "60s"
+
+# Google automation rules
+[[provider."google".automation]]
+regex = "This message does not have authentication information"
+action = "SuspendTenant"
+duration = "3 hours"
+
+[[provider."google".automation]]
+regex = "Rate limit exceeded"
+action = "Suspend"
+duration = "1 hour"
+
+[[provider."google".automation]]
+regex = "Too many connections"
+action = "ReduceConnectionLimit"
+duration = "2 hours"
+reduction_factor = 0.5
+
+[provider."microsoft"]
+match = [
+    {MXSuffix = ".outlook.com"},
+    {MXSuffix = ".hotmail.com"},
+    {MXSuffix = ".live.com"},
+    {MXSuffix = ".ms-acdc.office.com"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 60
+provider_connection_limit = 6
+consecutive_connection_failures_before_delay = 6
+max_connection_rate = "10/min"
+max_message_rate = "100/s"
+idle_timeout = "60s"
+
+# Microsoft automation rules
+[[provider."microsoft".automation]]
+regex = "Rate limit exceeded"
+action = "Suspend"
+duration = "2 hours"
+
+[[provider."microsoft".automation]]
+regex = "Too many connections"
+action = "ReduceConnectionLimit"
+duration = "1 hour"
+reduction_factor = 0.6
+
+[provider."yahoo"]
+match = [
+    {MXSuffix = ".yahoodns.net"},
+    {MXSuffix = ".yahoo.com"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 40
+provider_connection_limit = 4
+consecutive_connection_failures_before_delay = 4
+max_connection_rate = "8/min"
+max_message_rate = "80/s"
+idle_timeout = "60s"
+
+# Yahoo automation rules
+[[provider."yahoo".automation]]
+regex = "\\[TS04\\]"
+action = "Suspend"
+duration = "2 hours"
+
+[[provider."yahoo".automation]]
+regex = "Rate limit exceeded"
+action = "Suspend"
+duration = "1 hour"
+
+[provider."aol"]
+match = [
+    {MXSuffix = ".aol.com"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 30
+provider_connection_limit = 3
+consecutive_connection_failures_before_delay = 3
+max_connection_rate = "5/min"
+max_message_rate = "50/s"
+idle_timeout = "60s"
+
+[provider."protonmail"]
+match = [
+    {MXSuffix = ".protonmail.ch"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 25
+provider_connection_limit = 3
+consecutive_connection_failures_before_delay = 3
+max_connection_rate = "5/min"
+max_message_rate = "40/s"
+idle_timeout = "60s"
+
+[provider."tutanota"]
+match = [
+    {MXSuffix = ".tutanota.com"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 20
+provider_connection_limit = 2
+consecutive_connection_failures_before_delay = 2
+max_connection_rate = "3/min"
+max_message_rate = "30/s"
+idle_timeout = "60s"
+
+# Enterprise email providers
+[provider."enterprise"]
+match = [
+    {MXSuffix = ".office365.com"},
+    {MXSuffix = ".onmicrosoft.com"},
+    {MXSuffix = ".exchange.microsoft.com"},
+    {MXSuffix = ".mail.protection.outlook.com"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 80
+provider_connection_limit = 8
+consecutive_connection_failures_before_delay = 8
+max_connection_rate = "15/min"
+max_message_rate = "150/s"
+idle_timeout = "60s"
+
+# Enterprise automation rules
+[[provider."enterprise".automation]]
+regex = "Rate limit exceeded"
+action = "Suspend"
+duration = "1 hour"
+
+[[provider."enterprise".automation]]
+regex = "Too many connections"
+action = "ReduceConnectionLimit"
+duration = "30 minutes"
+reduction_factor = 0.7
+
+# Small business email providers
+[provider."small-business"]
+match = [
+    {MXSuffix = ".cpanel.com"},
+    {MXSuffix = ".plesk.com"},
+    {MXSuffix = ".hostgator.com"},
+    {MXSuffix = ".bluehost.com"},
+    {MXSuffix = ".godaddy.com"}
+]
+enable_tls = "Opportunistic"
+max_deliveries_per_connection = 100
+provider_connection_limit = 10
+consecutive_connection_failures_before_delay = 20
+max_connection_rate = "20/min"
+max_message_rate = "200/s"
+idle_timeout = "60s"
+
+# Educational institutions
+[provider."educational"]
+match = [
+    {MXSuffix = ".edu"},
+    {MXSuffix = ".ac.uk"},
+    {MXSuffix = ".ac.za"}
+]
+enable_tls = "Opportunistic"
+max_deliveries_per_connection = 80
+provider_connection_limit = 8
+consecutive_connection_failures_before_delay = 15
+max_connection_rate = "15/min"
+max_message_rate = "150/s"
+idle_timeout = "60s"
+
+# Government domains
+[provider."government"]
+match = [
+    {MXSuffix = ".gov"},
+    {MXSuffix = ".gov.uk"},
+    {MXSuffix = ".gc.ca"}
+]
+enable_tls = "Required"
+max_deliveries_per_connection = 60
+provider_connection_limit = 6
+consecutive_connection_failures_before_delay = 10
+max_connection_rate = "10/min"
+max_message_rate = "100/s"
+idle_timeout = "60s"
+
+# Default settings for unknown domains
+[provider."default"]
+match = [{MXSuffix = "*"}]
+enable_tls = "Opportunistic"
+max_deliveries_per_connection = 50
+provider_connection_limit = 5
+consecutive_connection_failures_before_delay = 25
+max_connection_rate = "10/min"
+max_message_rate = "100/s"
+idle_timeout = "60s"
+
+# Domain-specific overrides
 [domains."gmail.com"]
-max_connections_per_second = 10
-max_messages_per_second = 100
-max_concurrent_connections = 5
+inherit_from = "google"
+max_retry_interval = "15 minutes"
+max_retry_count = 5
 
 [domains."outlook.com"]
-max_connections_per_second = 10
-max_messages_per_second = 100
-max_concurrent_connections = 5
+inherit_from = "microsoft"
+max_retry_interval = "20 minutes"
+max_retry_count = 4
 
 [domains."yahoo.com"]
-max_connections_per_second = 8
-max_messages_per_second = 80
-max_concurrent_connections = 4
+inherit_from = "yahoo"
+max_retry_interval = "25 minutes"
+max_retry_count = 3
 
-# Default domain settings
-[domains."*"]
-max_connections_per_second = 5
-max_messages_per_second = 50
-max_concurrent_connections = 3
+[domains."aol.com"]
+inherit_from = "aol"
+max_retry_interval = "30 minutes"
+max_retry_count = 4
+
+[domains."protonmail.com"]
+inherit_from = "protonmail"
+max_retry_interval = "45 minutes"
+max_retry_count = 3
+
+[domains."tutanota.com"]
+inherit_from = "tutanota"
+max_retry_interval = "60 minutes"
+max_retry_count = 2
+
+# High-volume domains with special handling
+[domains."high-volume"]
+match = [
+    "newsletter.com",
+    "marketing.com",
+    "bulk-email.com"
+]
+inherit_from = "default"
+max_deliveries_per_connection = 200
+provider_connection_limit = 20
+max_connection_rate = "50/min"
+max_message_rate = "500/s"
+
+# Low-volume domains with conservative settings
+[domains."low-volume"]
+match = [
+    "personal.com",
+    "family.com",
+    "small-business.com"
+]
+inherit_from = "default"
+max_deliveries_per_connection = 20
+provider_connection_limit = 2
+max_connection_rate = "5/min"
+max_message_rate = "50/s"
+
+# Automation rules for all domains
+[[automation]]
+regex = "Connection refused"
+action = "Suspend"
+duration = "30 minutes"
+
+[[automation]]
+regex = "Connection timeout"
+action = "Suspend"
+duration = "15 minutes"
+
+[[automation]]
+regex = "Authentication failed"
+action = "SuspendTenant"
+duration = "1 hour"
+
+[[automation]]
+regex = "Spam detected"
+action = "SuspendTenant"
+duration = "6 hours"
+
+[[automation]]
+regex = "Rate limit exceeded"
+action = "Suspend"
+duration = "1 hour"
+
+[[automation]]
+regex = "Too many connections"
+action = "ReduceConnectionLimit"
+duration = "30 minutes"
+reduction_factor = 0.5
+
+# Performance tuning parameters
+[performance]
+# Connection pooling
+max_idle_connections = 100
+connection_idle_timeout = "300s"
+connection_max_lifetime = "3600s"
+
+# Queue management
+max_queue_depth = 10000
+queue_processing_interval = "1s"
+queue_cleanup_interval = "60s"
+
+# Memory management
+max_memory_usage = "80%"
+garbage_collection_interval = "300s"
+
+# Network optimization
+tcp_keepalive = true
+tcp_nodelay = true
+socket_buffer_size = "64KB"
+
+# Monitoring and alerting
+[monitoring]
+# Health check thresholds
+max_delivery_latency = "30s"
+max_bounce_rate = "5%"
+max_queue_depth_threshold = 5000
+
+# Alerting rules
+[[monitoring.alerts]]
+condition = "bounce_rate > 5%"
+action = "notify_admin"
+severity = "warning"
+
+[[monitoring.alerts]]
+condition = "queue_depth > 5000"
+action = "notify_admin"
+severity = "critical"
+
+[[monitoring.alerts]]
+condition = "delivery_latency > 30s"
+action = "notify_admin"
+severity = "warning"
+
+# Logging configuration
+[logging]
+# Log levels
+default_level = "info"
+error_level = "error"
+warning_level = "warn"
+debug_level = "debug"
+
+# Log rotation
+max_file_size = "100MB"
+max_files = 10
+rotation_interval = "1h"
+
+# Log destinations
+[[logging.destinations]]
+type = "file"
+path = "/var/log/kumomta/traffic-shaping.log"
+level = "info"
+
+[[logging.destinations]]
+type = "syslog"
+facility = "mail"
+level = "warning"
+
+# Metrics collection
+[metrics]
+# Prometheus metrics
+enable_prometheus = true
+metrics_port = 8000
+metrics_path = "/metrics"
+
+# Custom metrics
+[[metrics.counters]]
+name = "messages_delivered"
+help = "Total messages delivered successfully"
+
+[[metrics.counters]]
+name = "messages_bounced"
+help = "Total messages that bounced"
+
+[[metrics.counters]]
+name = "connections_established"
+help = "Total SMTP connections established"
+
+[[metrics.gauges]]
+name = "active_connections"
+help = "Current number of active connections"
+
+[[metrics.histograms]]
+name = "delivery_duration"
+help = "Message delivery duration in seconds"
+buckets = [0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0]

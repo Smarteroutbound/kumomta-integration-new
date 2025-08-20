@@ -1,0 +1,64 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 201, 301, 302, 304]
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: POST
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 201, 301, 302, 304]
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+
+  dns:
+    prober: dns
+    timeout: 5s
+    dns:
+      preferred_ip_protocol: "ip4"
+      query_name: "kubernetes.default.svc.cluster.local"
+
+  smtp:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^220.*"
+        - send: "EHLO blackbox.exporter.local"
+        - expect: "^250.*"
+        - send: "QUIT"
+        - expect: "^221.*"
+
+  imap:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^\\* OK.*"
+        - send: "a001 LOGOUT"
+        - expect: "^a001 OK.*"
+
+  redis:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - send: "PING"
+        - expect: "^\\+PONG"

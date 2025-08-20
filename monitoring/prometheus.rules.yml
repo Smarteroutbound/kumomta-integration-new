@@ -1,0 +1,382 @@
+groups:
+  - name: kumomta_email_delivery_alerts
+    rules:
+      - alert: EmailDeliveryRateLow
+        expr: rate(messages_delivered_total[5m]) / (rate(messages_delivered_total[5m]) + rate(messages_delivery_failed_total[5m])) < 0.85
+        for: 5m
+        labels:
+          severity: critical
+          service: email_delivery
+        annotations:
+          summary: "Email delivery rate is below 85%"
+          description: "Email delivery rate for {{ $labels.instance }} is {{ $value | humanizePercentage }}"
+
+      - alert: EmailBounceRateHigh
+        expr: rate(messages_bounced_total[5m]) / (rate(messages_delivered_total[5m]) + rate(messages_bounced_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: email_delivery
+        annotations:
+          summary: "Email bounce rate is above 5%"
+          description: "Email bounce rate for {{ $labels.instance }} is {{ $value | humanizePercentage }}"
+
+      - alert: EmailRejectionRateHigh
+        expr: rate(messages_rejected_total[5m]) / (rate(messages_delivered_total[5m]) + rate(messages_rejected_total[5m])) > 0.03
+        for: 5m
+        labels:
+          severity: warning
+          service: email_delivery
+        annotations:
+          summary: "Email rejection rate is above 3%"
+          description: "Email rejection rate for {{ $labels.instance }} is {{ $value | humanizePercentage }}"
+
+      - alert: EmailQueueDepthHigh
+        expr: queue_depth_current > 5000
+        for: 2m
+        labels:
+          severity: warning
+          service: email_delivery
+        annotations:
+          summary: "Email queue depth is high"
+          description: "Email queue depth for {{ $labels.instance }} is {{ $value }}"
+
+      - alert: EmailQueueDepthCritical
+        expr: queue_depth_current > 10000
+        for: 1m
+        labels:
+          severity: critical
+          service: email_delivery
+        annotations:
+          summary: "Email queue depth is critical"
+          description: "Email queue depth for {{ $labels.instance }} is {{ $value }}"
+
+      - alert: EmailDeliveryLatencyHigh
+        expr: histogram_quantile(0.95, rate(delivery_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: email_delivery
+        annotations:
+          summary: "Email delivery latency is high"
+          description: "95th percentile delivery latency for {{ $labels.instance }} is {{ $value }}s"
+
+  - name: kumomta_connection_alerts
+    rules:
+      - alert: ConnectionFailureRateHigh
+        expr: rate(connections_failed_total[5m]) / (rate(connections_established_total[5m]) + rate(connections_failed_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: connections
+        annotations:
+          summary: "Connection failure rate is high"
+          description: "Connection failure rate for {{ $labels.instance }} is {{ $value | humanizePercentage }}"
+
+      - alert: ActiveConnectionsHigh
+        expr: connections_active_current > 800
+        for: 2m
+        labels:
+          severity: warning
+          service: connections
+        annotations:
+          summary: "Active connections are high"
+          description: "Active connections for {{ $labels.instance }} is {{ $value }}"
+
+      - alert: ConnectionEstablishmentRateLow
+        expr: rate(connections_established_total[5m]) < 10
+        for: 5m
+        labels:
+          severity: warning
+          service: connections
+        annotations:
+          summary: "Connection establishment rate is low"
+          description: "Connection establishment rate for {{ $labels.instance }} is {{ $value }}/s"
+
+  - name: kumomta_system_health_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system_health
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system_health
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: critical
+          service: system_health
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: system_health
+        annotations:
+          summary: "Disk space is critically low on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }}"
+
+  - name: kumomta_service_health_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: service_health
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "Service {{ $labels.instance }} has been down for more than 1 minute"
+
+      - alert: ServiceHighLatency
+        expr: http_request_duration_seconds > 2
+        for: 2m
+        labels:
+          severity: warning
+          service: service_health
+        annotations:
+          summary: "High latency on {{ $labels.instance }}"
+          description: "HTTP request duration is {{ $value }}s on {{ $labels.instance }}"
+
+      - alert: ServiceUnreachable
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: service_health
+        annotations:
+          summary: "Service unreachable"
+          description: "Service {{ $labels.instance }} is unreachable"
+
+  - name: kumomta_redis_alerts
+    rules:
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value }}%"
+
+      - alert: RedisHighConnectionCount
+        expr: redis_connected_clients > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis connection count"
+          description: "Redis has {{ $value }} connected clients"
+
+      - alert: RedisSlowCommands
+        expr: rate(redis_commands_duration_seconds_sum[5m]) / rate(redis_commands_duration_seconds_count[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Slow Redis commands detected"
+          description: "Average Redis command duration is {{ $value }}s"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis service is not responding"
+
+  - name: kumomta_tsa_alerts
+    rules:
+      - alert: TSADaemonDown
+        expr: up{job="tsa-daemon"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: tsa
+        annotations:
+          summary: "TSA daemon is down"
+          description: "Traffic Shaping Automation daemon is not responding"
+
+      - alert: TSADaemonHighLatency
+        expr: http_request_duration_seconds{job="tsa-daemon"} > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: tsa
+        annotations:
+          summary: "TSA daemon high latency"
+          description: "TSA daemon response time is {{ $value }}s"
+
+      - alert: TSAProcessingErrors
+        expr: increase(tsa_processing_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: tsa
+        annotations:
+          summary: "TSA processing errors detected"
+          description: "{{ $value }} TSA processing errors in the last 5 minutes"
+
+  - name: kumomta_business_metrics_alerts
+    rules:
+      - alert: LowUserActivity
+        expr: tenants_active_current < 5
+        for: 1h
+        labels:
+          severity: warning
+          service: business_metrics
+        annotations:
+          summary: "Low user activity detected"
+          description: "Only {{ $value }} active tenants"
+
+      - alert: LowCampaignActivity
+        expr: campaigns_active_current < 3
+        for: 1h
+        labels:
+          severity: warning
+          service: business_metrics
+        annotations:
+          summary: "Low campaign activity detected"
+          description: "Only {{ $value }} active campaigns"
+
+      - alert: HighDomainCount
+        expr: domains_managed_current > 1000
+        for: 5m
+        labels:
+          severity: info
+          service: business_metrics
+        annotations:
+          summary: "High domain count"
+          description: "Managing {{ $value }} domains"
+
+  - name: kumomta_performance_alerts
+    rules:
+      - alert: HighMessageProcessingRate
+        expr: rate(queue_processing_total[5m]) > 1000
+        for: 5m
+        labels:
+          severity: info
+          service: performance
+        annotations:
+          summary: "High message processing rate"
+          description: "Processing {{ $value }} messages per second"
+
+      - alert: LowMessageProcessingRate
+        expr: rate(queue_processing_total[5m]) < 10
+        for: 5m
+        labels:
+          severity: warning
+          service: performance
+        annotations:
+          summary: "Low message processing rate"
+          description: "Processing only {{ $value }} messages per second"
+
+      - alert: HighMessageSize
+        expr: histogram_quantile(0.95, rate(message_size_bytes_bucket[5m])) > 10485760
+        for: 5m
+        labels:
+          severity: warning
+          service: performance
+        annotations:
+          summary: "Large message sizes detected"
+          description: "95th percentile message size is {{ $value | humanize }}B"
+
+  - name: kumomta_security_alerts
+    rules:
+      - alert: HighFailedLoginAttempts
+        expr: rate(smtp_auth_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High failed login attempts detected"
+          description: "{{ $value }} failed login attempts per second"
+
+      - alert: UnusualAPIUsage
+        expr: rate(http_requests_total[5m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Unusual API usage detected"
+          description: "{{ $value }} API requests per second"
+
+      - alert: HighConnectionRate
+        expr: rate(connections_established_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High connection rate detected"
+          description: "{{ $value }} connections per second"
+
+  - name: kumomta_network_alerts
+    rules:
+      - alert: HighNetworkLatency
+        expr: probe_duration_seconds > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: network_health
+        annotations:
+          summary: "High network latency detected"
+          description: "Network latency to {{ $labels.instance }} is {{ $value }}s"
+
+      - alert: NetworkUnreachable
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: network_health
+        annotations:
+          summary: "Network unreachable"
+          description: "Network to {{ $labels.instance }} is unreachable"
+
+  - name: kumomta_storage_alerts
+    rules:
+      - alert: SpoolStorageHigh
+        expr: (node_filesystem_size_bytes{mountpoint="/var/spool/kumomta"} - node_filesystem_free_bytes{mountpoint="/var/spool/kumomta"}) / node_filesystem_size_bytes{mountpoint="/var/spool/kumomta"} * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: storage
+        annotations:
+          summary: "High spool storage usage"
+          description: "Spool storage usage is {{ $value }}%"
+
+      - alert: LogStorageHigh
+        expr: (node_filesystem_size_bytes{mountpoint="/var/log/kumomta"} - node_filesystem_free_bytes{mountpoint="/var/log/kumomta"}) / node_filesystem_size_bytes{mountpoint="/var/log/kumomta"} * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: storage
+        annotations:
+          summary: "High log storage usage"
+          description: "Log storage usage is {{ $value }}%"

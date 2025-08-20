@@ -1,0 +1,183 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: "kumomta-enterprise"
+    environment: "production"
+
+rule_files:
+  - "prometheus.rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+    labels:
+      instance: "prometheus"
+      role: "monitoring"
+
+  # KumoMTA main daemon
+  - job_name: "kumod"
+    static_configs:
+      - targets: ["kumod:8000"]
+    labels:
+      instance: "kumod"
+      role: "email-delivery"
+      service: "kumomta"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # TSA daemon
+  - job_name: "tsa-daemon"
+    static_configs:
+      - targets: ["tsa-daemon:8008"]
+    labels:
+      instance: "tsa-daemon"
+      role: "traffic-shaping"
+      service: "tsa"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # Redis
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+    labels:
+      instance: "redis"
+      role: "cache"
+      service: "redis"
+    scrape_interval: 15s
+
+  # Node metrics
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    labels:
+      instance: "node-exporter"
+      role: "system-metrics"
+    scrape_interval: 15s
+
+  # Blackbox monitoring for external endpoints
+  - job_name: "blackbox-http"
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://kumod:8000/health
+          - http://tsa-daemon:8008/health
+          - http://prometheus:9090/-/healthy
+          - http://grafana:3000/api/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Blackbox monitoring for SMTP endpoints
+  - job_name: "blackbox-smtp"
+    metrics_path: /probe
+    params:
+      module: [smtp]
+    static_configs:
+      - targets:
+          - kumod:25
+          - kumod:587
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Blackbox monitoring for Redis
+  - job_name: "blackbox-redis"
+    metrics_path: /probe
+    params:
+      module: [redis]
+    static_configs:
+      - targets:
+          - redis:6379
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # HAProxy metrics (if enabled)
+  - job_name: "haproxy"
+    static_configs:
+      - targets: ["haproxy:8404"]
+    labels:
+      instance: "haproxy"
+      role: "load-balancer"
+      service: "haproxy"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # Nginx metrics (if enabled)
+  - job_name: "nginx"
+    static_configs:
+      - targets: ["nginx:80"]
+    labels:
+      instance: "nginx"
+      role: "web-server"
+      service: "nginx"
+    metrics_path: "/nginx_status"
+    scrape_interval: 15s
+
+  # Fluentd metrics (if enabled)
+  - job_name: "fluentd"
+    static_configs:
+      - targets: ["fluentd:24231"]
+    labels:
+      instance: "fluentd"
+      role: "log-aggregation"
+      service: "fluentd"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # Custom KumoMTA business metrics
+  - job_name: "kumomta-business"
+    static_configs:
+      - targets: ["kumod:8000"]
+    labels:
+      instance: "kumod"
+      role: "business-metrics"
+      service: "kumomta"
+    metrics_path: "/business-metrics"
+    scrape_interval: 30s
+
+  # KumoMTA health checks
+  - job_name: "kumomta-health"
+    static_configs:
+      - targets: ["kumod:8000"]
+    labels:
+      instance: "kumod"
+      role: "health-monitoring"
+      service: "kumomta"
+    metrics_path: "/health"
+    scrape_interval: 30s
+
+  # TSA health checks
+  - job_name: "tsa-health"
+    static_configs:
+      - targets: ["tsa-daemon:8008"]
+    labels:
+      instance: "tsa-daemon"
+      role: "health-monitoring"
+      service: "tsa"
+    metrics_path: "/health"
+    scrape_interval: 30s
