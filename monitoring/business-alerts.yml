@@ -9,7 +9,7 @@ groups:
           description: "Critical: Email delivery performance has degraded significantly"
           severity: "critical"
           business_impact: "Client email campaigns may be failing"
-          
+
       - alert: BounceRateHigh
         expr: rate(kumomta_bounced_total[5m]) / rate(kumomta_attempted_total[5m]) > 0.1
         for: 5m
@@ -18,7 +18,7 @@ groups:
           description: "High bounce rate detected - may affect IP reputation"
           severity: "warning"
           business_impact: "Potential deliverability issues for all clients"
-          
+
       - alert: IPReputationDegraded
         expr: kumomta_ip_reputation_score < 70
         for: 1m
@@ -38,7 +38,7 @@ groups:
           description: "Multiple campaigns experiencing delivery issues"
           severity: "warning"
           business_impact: "Client campaign success rates declining"
-          
+
       - alert: SequencePerformanceDrop
         expr: rate(kumomta_sequence_delivery_rate[15m]) < 0.85
         for: 10m
@@ -58,7 +58,7 @@ groups:
           description: "High rate of user complaints detected"
           severity: "critical"
           business_impact: "Risk of account suspension and reputation damage"
-          
+
       - alert: ClientDomainIssues
         expr: count(kumomta_domain_delivery_issues_total) > 5
         for: 15m
@@ -78,7 +78,7 @@ groups:
           description: "High rate of service errors affecting delivery"
           severity: "critical"
           business_impact: "Client satisfaction and retention at risk"
-          
+
       - alert: CapacityThreshold
         expr: kumomta_queue_depth > 10000
         for: 5m
@@ -98,7 +98,7 @@ groups:
           description: "Email deliverability below competitive benchmarks"
           severity: "warning"
           business_impact: "Competitive disadvantage in market"
-          
+
       - alert: ResponseTimeDegraded
         expr: histogram_quantile(0.95, rate(kumomta_delivery_duration_seconds_bucket[5m])) > 30
         for: 10m

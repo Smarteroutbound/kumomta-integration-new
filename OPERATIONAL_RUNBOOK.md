@@ -1,6 +1,6 @@
 # 🚀 **KUMOMTA OPERATIONAL RUNBOOK**
 
-*Complete operational procedures for Smarter Outbound KumoMTA infrastructure*
+_Complete operational procedures for Smarter Outbound KumoMTA infrastructure_
 
 ---
 
@@ -9,6 +9,7 @@
 ### **🌅 Morning Health Check (9:00 AM)**
 
 #### **1. System Health Verification**
+
 ```bash
 # Check all container status
 docker-compose ps
@@ -20,6 +21,7 @@ docker-compose exec redis redis-cli ping
 ```
 
 #### **2. Performance Metrics Review**
+
 ```bash
 # Check Prometheus targets
 curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {instance: .labels.instance, health: .health}'
@@ -29,6 +31,7 @@ curl -s "http://localhost:9090/api/v1/query?query=rate(kumomta_delivered_total[8
 ```
 
 #### **3. Queue Status Check**
+
 ```bash
 # Check email queue depth
 docker-compose exec kumod kumomta-cli queue depth
@@ -40,12 +43,14 @@ docker-compose exec kumod kumomta-cli queue list --stuck
 ### **🌆 Afternoon Performance Review (2:00 PM)**
 
 #### **1. Business Metrics Analysis**
+
 - Review delivery rates for all client domains
 - Check IP reputation scores
 - Monitor bounce and complaint rates
 - Review campaign performance metrics
 
 #### **2. Capacity Planning**
+
 ```bash
 # Check resource usage
 docker stats --no-stream
@@ -57,6 +62,7 @@ df -h /var/spool/kumomta/
 ### **🌙 Evening Maintenance (8:00 PM)**
 
 #### **1. Log Review**
+
 ```bash
 # Check for errors in last 12 hours
 docker-compose logs --since="12h" kumod | grep -i error
@@ -66,6 +72,7 @@ docker-compose logs --since="12h" tsa-daemon | grep -i warning
 ```
 
 #### **2. Performance Optimization**
+
 ```bash
 # Check RocksDB compaction status
 docker-compose exec kumod kumomta-cli spool status
@@ -81,6 +88,7 @@ docker-compose exec redis redis-cli info memory
 ### **🔴 CRITICAL INCIDENTS (Response: IMMEDIATE)**
 
 #### **Email Delivery Completely Stopped**
+
 ```bash
 # 1. Emergency Assessment
 docker-compose exec kumod kumomta-cli queue depth
@@ -94,6 +102,7 @@ docker-compose exec kumod curl -f http://localhost:8000/health
 ```
 
 #### **IP Reputation Crisis (< 50)**
+
 ```bash
 # 1. Immediate IP Rotation
 docker-compose exec kumod kumomta-cli ip rotate --emergency
@@ -106,6 +115,7 @@ curl -s "http://localhost:8000/api/ip/status" | jq
 ```
 
 #### **High Bounce Rate (> 20%)**
+
 ```bash
 # 1. Pause Problematic Campaigns
 docker-compose exec kumod kumomta-cli campaign pause --bounce-rate-threshold 0.2
@@ -120,6 +130,7 @@ docker-compose exec kumod kumomta-cli throttle set --domain-problematic.com --ra
 ### **🟡 WARNING INCIDENTS (Response: Within 1 Hour)**
 
 #### **Performance Degradation**
+
 ```bash
 # 1. Performance Analysis
 docker-compose exec kumod kumomta-cli performance analyze
@@ -132,6 +143,7 @@ watch -n 30 'docker-compose exec kumod kumomta-cli performance metrics'
 ```
 
 #### **High Queue Depth (> 5,000)**
+
 ```bash
 # 1. Queue Analysis
 docker-compose exec kumod kumomta-cli queue analyze
@@ -146,6 +158,7 @@ watch -n 10 'docker-compose exec kumod kumomta-cli queue depth'
 ### **🟢 MINOR INCIDENTS (Response: Within 4 Hours)**
 
 #### **Monitoring Alerts**
+
 ```bash
 # 1. Alert Investigation
 curl -s "http://localhost:9093/api/v1/alerts" | jq
@@ -164,6 +177,7 @@ docker-compose exec kumod kumomta-cli alert verify --alert-id ALERT_ID
 ### **🚀 High-Volume Optimization**
 
 #### **For 100K+ Emails/Day**
+
 ```bash
 # 1. Increase Worker Processes
 docker-compose exec kumod kumomta-cli worker scale --count 8
@@ -177,6 +191,7 @@ docker-compose exec redis redis-cli config set maxmemory 4gb
 ```
 
 #### **For 1M+ Emails/Day**
+
 ```bash
 # 1. Horizontal Scaling
 docker-compose -f docker-compose.scale.yml up -d --scale kumod=3
@@ -191,6 +206,7 @@ docker-compose exec kumod kumomta-cli spool partition --shards 4
 ### **📊 Business Hours Optimization**
 
 #### **Peak Hours (9 AM - 5 PM)**
+
 ```bash
 # 1. Increase Delivery Rates
 docker-compose exec kumod kumomta-cli throttle set --global --rate 2000
@@ -203,6 +219,7 @@ watch -n 60 'docker-compose exec kumod kumomta-cli performance metrics'
 ```
 
 #### **Off-Peak Hours (6 PM - 8 AM)**
+
 ```bash
 # 1. Reduce Delivery Rates
 docker-compose exec kumod kumomta-cli throttle set --global --rate 500
@@ -222,6 +239,7 @@ docker-compose exec kumod kumomta-cli analytics aggregate
 ### **📅 Weekly Maintenance**
 
 #### **Sunday 2:00 AM - Low Traffic Window**
+
 ```bash
 # 1. Database Maintenance
 docker-compose exec kumod kumomta-cli spool compact
@@ -237,6 +255,7 @@ docker-compose exec kumod kumomta-cli performance analyze --full
 ### **📅 Monthly Maintenance**
 
 #### **First Sunday of Month**
+
 ```bash
 # 1. Security Updates
 docker-compose pull
@@ -256,6 +275,7 @@ docker-compose up -d --force-recreate
 ### **🔍 Key Metrics to Watch**
 
 #### **Business Metrics**
+
 - **Delivery Rate**: Target > 95%
 - **Bounce Rate**: Target < 5%
 - **Complaint Rate**: Target < 0.1%
@@ -263,12 +283,14 @@ docker-compose up -d --force-recreate
 - **IP Reputation**: Target > 80
 
 #### **Technical Metrics**
+
 - **Response Time**: Target < 10 seconds
 - **Error Rate**: Target < 0.1%
 - **Resource Usage**: CPU < 80%, Memory < 85%
 - **Disk Space**: Available > 20%
 
 ### **📱 Alert Channels**
+
 - **Critical**: SMS + Email + Slack
 - **Warning**: Email + Slack
 - **Info**: Slack only
@@ -280,6 +302,7 @@ docker-compose up -d --force-recreate
 ### **📈 Horizontal Scaling**
 
 #### **Add KumoMTA Instances**
+
 ```bash
 # 1. Scale Services
 docker-compose -f docker-compose.scale.yml up -d --scale kumod=3
@@ -292,6 +315,7 @@ docker-compose exec kumod kumomta-cli cluster status
 ```
 
 #### **Database Scaling**
+
 ```bash
 # 1. Add Read Replicas
 docker-compose -f docker-compose.db.yml up -d
@@ -308,11 +332,13 @@ docker-compose -f docker-compose.db.yml up -d
 ## 🆘 **EMERGENCY CONTACTS**
 
 ### **👥 On-Call Team**
+
 - **Primary**: [Your Name] - [Phone] - [Email]
 - **Secondary**: [Backup Name] - [Phone] - [Email]
 - **Escalation**: [Manager Name] - [Phone] - [Email]
 
 ### **🔧 External Support**
+
 - **KumoMTA Support**: [Contact Info]
 - **Infrastructure Provider**: [Contact Info]
 - **DNS Provider**: [Contact Info]
@@ -322,6 +348,7 @@ docker-compose -f docker-compose.db.yml up -d
 ## 📚 **USEFUL COMMANDS REFERENCE**
 
 ### **🔍 Health Checks**
+
 ```bash
 # Service health
 docker-compose exec kumod curl -f http://localhost:8000/health
@@ -334,6 +361,7 @@ docker-compose exec kumod kumomta-cli performance metrics
 ```
 
 ### **📊 Analytics**
+
 ```bash
 # Delivery statistics
 docker-compose exec kumod kumomta-cli analytics delivery --last-24h
@@ -346,6 +374,7 @@ docker-compose exec kumod kumomta-cli campaign stats
 ```
 
 ### **⚙️ Configuration**
+
 ```bash
 # Reload policies
 docker-compose exec kumod kumomta-cli policy reload
@@ -359,4 +388,4 @@ docker-compose exec kumod kumomta-cli ip add --ip 192.168.1.100 --pool primary
 
 ---
 
-*This runbook should be updated regularly based on operational experience and system changes.*
+_This runbook should be updated regularly based on operational experience and system changes._

@@ -5,6 +5,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: kumo-redis
+    hostname: redis
     ports:
       - "6379:6379"
     volumes:
@@ -16,20 +17,29 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
 
   # Main KumoMTA daemon
   kumod:
     image: ghcr.io/kumocorp/kumomta:main
     container_name: kumod-enterprise
+    hostname: kumomta-server
     volumes:
-      - ./policy:/opt/kumomta/etc/policy
+      - ./policy:/opt/kumomta/etc/policy:ro
       - kumo_data_spool:/var/spool/kumomta/data
       - kumo_meta_spool:/var/spool/kumomta/meta
       - kumo_logs:/var/log/kumomta
     ports:
-      - "25:25"
-      - "587:587"
-      - "8000:8000"
+      - "0.0.0.0:25:25"
+      - "0.0.0.0:587:587"
+      - "0.0.0.0:8000:8000"
     depends_on:
       redis:
         condition: service_healthy
@@ -42,13 +52,23 @@ services:
       - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
       - KUMO_LOG_LEVEL=info
       - KUMO_PERFORMANCE_MODE=high
-    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod"]
+      - KUMO_API_BIND=0.0.0.0:8000
+      - KUMO_ALLOWED_IPS=151.236.251.75,149.28.244.166
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod --api-bind 0.0.0.0:8000"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
 
   # Traffic Shaping Automation (TSA) daemon
   tsa-daemon:

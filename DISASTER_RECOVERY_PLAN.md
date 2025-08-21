@@ -1,17 +1,19 @@
 # 🚨 **KUMOMTA DISASTER RECOVERY PLAN**
 
-*Comprehensive disaster recovery procedures for Smarter Outbound email infrastructure*
+_Comprehensive disaster recovery procedures for Smarter Outbound email infrastructure_
 
 ---
 
 ## 🎯 **RECOVERY OBJECTIVES**
 
 ### **RTO (Recovery Time Objective)**
+
 - **Critical Services**: 15 minutes
 - **Full System**: 2 hours
 - **Data Recovery**: 4 hours
 
 ### **RPO (Recovery Point Objective)**
+
 - **Email Queue**: 5 minutes
 - **Configuration**: 1 hour
 - **Analytics Data**: 24 hours
@@ -23,6 +25,7 @@
 ### **📦 Automated Backups**
 
 #### **1. Configuration Backups**
+
 ```bash
 #!/bin/bash
 # backup-config.sh - Daily configuration backup
@@ -48,6 +51,7 @@ find $BACKUP_DIR -name "*.txt" -mtime +30 -delete
 ```
 
 #### **2. Data Backups**
+
 ```bash
 #!/bin/bash
 # backup-data.sh - Daily data backup
@@ -72,6 +76,7 @@ find $BACKUP_DIR -name "prometheus_*" -mtime +7 -exec rm -rf {} \;
 ```
 
 #### **3. Backup Verification**
+
 ```bash
 #!/bin/bash
 # verify-backup.sh - Verify backup integrity
@@ -114,11 +119,13 @@ fi
 ### **🔴 SCENARIO 1: Complete System Failure**
 
 #### **Symptoms**
+
 - All containers down
 - No response from any service
 - Complete email delivery failure
 
 #### **Recovery Procedure**
+
 ```bash
 # 1. Emergency Assessment
 echo "🚨 EMERGENCY: Complete system failure detected"
@@ -164,11 +171,13 @@ echo "✅ Recovery procedure completed at $(date)"
 ### **🟡 SCENARIO 2: Data Corruption**
 
 #### **Symptoms**
+
 - Service running but data inconsistent
 - Email delivery errors
 - Monitoring data gaps
 
 #### **Recovery Procedure**
+
 ```bash
 # 1. Identify Corrupted Data
 echo "🔍 Identifying corrupted data..."
@@ -206,11 +215,13 @@ docker-compose exec kumod kumomta-cli queue status
 ### **🟢 SCENARIO 3: Performance Degradation**
 
 #### **Symptoms**
+
 - Slow email delivery
 - High queue depth
 - Resource exhaustion
 
 #### **Recovery Procedure**
+
 ```bash
 # 1. Performance Analysis
 echo "🔍 Analyzing performance issues..."
@@ -241,6 +252,7 @@ watch -n 30 'docker-compose exec kumod kumomta-cli performance metrics'
 ### **🌐 Geographic Failover**
 
 #### **Primary Site Failure**
+
 ```bash
 # 1. Activate Secondary Site
 echo "🌍 Activating secondary site..."
@@ -263,6 +275,7 @@ echo "✅ Failover to secondary site completed"
 ```
 
 #### **Return to Primary Site**
+
 ```bash
 # 1. Verify Primary Site Health
 echo "🔍 Verifying primary site health..."
@@ -288,6 +301,7 @@ echo "✅ Return to primary site completed"
 ### **⚖️ Load Balancer Failover**
 
 #### **Active-Passive Configuration**
+
 ```bash
 # 1. Check Primary Load Balancer
 echo "🔍 Checking primary load balancer..."
@@ -311,16 +325,19 @@ echo "🔍 Verifying traffic distribution..."
 ### **🚨 Alert Escalation Matrix**
 
 #### **Level 1: Automated Alerts (0-15 minutes)**
+
 - **Channel**: Slack + Email
 - **Recipients**: On-call engineer
 - **Actions**: Acknowledge alert, initial assessment
 
 #### **Level 2: Escalation (15-30 minutes)**
+
 - **Channel**: SMS + Phone call
 - **Recipients**: Senior engineer + Team lead
 - **Actions**: Join incident response, technical analysis
 
 #### **Level 3: Management (30+ minutes)**
+
 - **Channel**: Phone call + Executive notification
 - **Recipients**: CTO + VP Engineering
 - **Actions**: Business impact assessment, customer communication
@@ -328,6 +345,7 @@ echo "🔍 Verifying traffic distribution..."
 ### **📋 Notification Templates**
 
 #### **Initial Alert**
+
 ```
 🚨 INCIDENT ALERT: [SEVERITY] - [INCIDENT_TYPE]
 Time: [TIMESTAMP]
@@ -336,6 +354,7 @@ Status: Investigating
 ```
 
 #### **Update Alert**
+
 ```
 📊 INCIDENT UPDATE: [INCIDENT_ID]
 Time: [TIMESTAMP]
@@ -345,6 +364,7 @@ Actions: [CURRENT_ACTIONS]
 ```
 
 #### **Resolution Alert**
+
 ```
 ✅ INCIDENT RESOLVED: [INCIDENT_ID]
 Time: [TIMESTAMP]
@@ -360,11 +380,13 @@ Prevention: [PREVENTIVE_MEASURES]
 ### **📅 Testing Schedule**
 
 #### **Weekly Tests**
+
 - **Backup Verification**: Every Sunday 2:00 AM
 - **Health Check Scripts**: Every Monday 9:00 AM
 - **Failover Procedures**: Every other week
 
 #### **Monthly Tests**
+
 - **Full Disaster Recovery**: First Sunday of month
 - **Performance Recovery**: Third Sunday of month
 - **Data Recovery**: Last Sunday of month
@@ -372,6 +394,7 @@ Prevention: [PREVENTIVE_MEASURES]
 ### **🧪 Test Procedures**
 
 #### **Backup Restoration Test**
+
 ```bash
 #!/bin/bash
 # test-backup-restore.sh - Test backup restoration
@@ -394,6 +417,7 @@ echo "✅ Backup restoration test completed"
 ```
 
 #### **Failover Test**
+
 ```bash
 #!/bin/bash
 # test-failover.sh - Test failover procedures
@@ -421,17 +445,20 @@ echo "✅ Failover test completed"
 ## 📚 **RECOVERY DOCUMENTATION**
 
 ### **📖 Runbook References**
+
 - **Daily Operations**: `OPERATIONAL_RUNBOOK.md`
 - **Performance Tuning**: `PERFORMANCE_GUIDE.md`
 - **Monitoring Setup**: `MONITORING_SETUP.md`
 
 ### **🔧 Tool Locations**
+
 - **Backup Scripts**: `/opt/scripts/backup/`
 - **Recovery Scripts**: `/opt/scripts/recovery/`
 - **Test Scripts**: `/opt/scripts/testing/`
 - **Documentation**: `/opt/docs/`
 
 ### **📞 Emergency Contacts**
+
 - **Primary On-Call**: [Name] - [Phone] - [Email]
 - **Secondary On-Call**: [Name] - [Phone] - [Email]
 - **Management Escalation**: [Name] - [Phone] - [Email]
@@ -442,18 +469,21 @@ echo "✅ Failover test completed"
 ## 🎯 **POST-RECOVERY ACTIONS**
 
 ### **📊 Incident Analysis**
+
 1. **Root Cause Analysis**: Document what caused the incident
 2. **Impact Assessment**: Quantify business impact
 3. **Recovery Timeline**: Document recovery steps and timing
 4. **Lessons Learned**: Identify improvements for future incidents
 
 ### **🔧 Preventive Measures**
+
 1. **Configuration Updates**: Fix any configuration issues
 2. **Monitoring Improvements**: Add alerts for similar issues
 3. **Process Updates**: Improve recovery procedures
 4. **Training**: Update team training based on incident
 
 ### **📈 Continuous Improvement**
+
 1. **Recovery Time Analysis**: Track and improve RTO
 2. **Recovery Point Analysis**: Track and improve RPO
 3. **Procedure Updates**: Refine recovery procedures
@@ -461,4 +491,4 @@ echo "✅ Failover test completed"
 
 ---
 
-*This disaster recovery plan should be reviewed and updated quarterly, and tested monthly to ensure effectiveness.*
+_This disaster recovery plan should be reviewed and updated quarterly, and tested monthly to ensure effectiveness._
