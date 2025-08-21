@@ -37,7 +37,13 @@ local config = {
 
 -- Initialize TSA daemon with configuration
 print("✅ TSA Daemon configuration loaded successfully!")
-print("📊 Configuration:", require('cjson').encode(config))
+print("📊 Configuration loaded:")
+print("   • HTTP Listener: " .. config.http_listener.listen)
+print("   • Processing Interval: " .. config.processing.interval)
+print("   • Max Concurrent Rules: " .. config.processing.max_concurrent_rules)
+print("   • Analytics: " .. tostring(config.features.analytics))
+print("   • ML Patterns: " .. tostring(config.features.ml_patterns))
+print("   • Alerting: " .. tostring(config.features.alerting))
 
 -- TSA daemon is now ready to process traffic shaping events
 print("🎯 TSA Daemon ready for traffic shaping automation!")
