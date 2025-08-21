@@ -1,0 +1,84 @@
+version: '3.8'
+
+# Minimal KumoMTA deployment - Core services only
+# Use this for initial testing and deployment
+
+services:
+  # Redis for throttling and shared state
+  redis:
+    image: redis:7-alpine
+    container_name: kumo-redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Main KumoMTA daemon - Core service
+  kumod:
+    image: ghcr.io/kumocorp/kumomta:main
+    container_name: kumod-enterprise
+    hostname: kumomta-server
+    volumes:
+      - ./policy:/opt/kumomta/etc/policy:ro
+      - kumo_data_spool:/var/spool/kumomta/data
+      - kumo_meta_spool:/var/spool/kumomta/meta
+      - kumo_logs:/var/log/kumomta
+    ports:
+      - "0.0.0.0:25:25"
+      - "0.0.0.0:587:587"
+      - "0.0.0.0:8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
+      - KUMO_LOG_LEVEL=info
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod --api-bind 0.0.0.0:8000"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Basic monitoring with Node Exporter
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: kumo-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
+  kumo_data_spool:
+    driver: local
+  kumo_meta_spool:
+    driver: local
+  kumo_logs:
+    driver: local
+
+networks:
+  default:
+    name: kumo-network
+    driver: bridge
