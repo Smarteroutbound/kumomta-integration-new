@@ -37,8 +37,8 @@ services:
       - kumo_meta_spool:/var/spool/kumomta/meta
       - kumo_logs:/var/log/kumomta
     ports:
-      - "0.0.0.0:25:25"
-      - "0.0.0.0:587:587"
+      - "0.0.0.0:2525:25"
+      - "0.0.0.0:2587:587"
       - "0.0.0.0:8000:8000"
     depends_on:
       redis:
@@ -220,6 +220,8 @@ services:
     image: haproxy:2.8-alpine
     container_name: kumo-haproxy
     ports:
+      - "2525:2525"
+      - "2587:2587"
       - "8080:8080"
       - "8404:8404"
     volumes:

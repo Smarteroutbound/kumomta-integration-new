@@ -1,37 +1,41 @@
 --[[
-KumoMTA Traffic Shaping Automation (TSA) Daemon Configuration
-Enterprise-grade automation for intelligent email delivery optimization
+KumoMTA Traffic Shaping Automation (TSA) Daemon Policy
+Production-ready configuration for Smarter Outbound
 ]]
 
--- TSA daemon initialization
-print("🚀 Initializing Traffic Shaping Automation Daemon...")
-
--- Basic TSA configuration
+-- TSA daemon configuration
 local config = {
-  -- HTTP listener configuration
   http_listener = {
     listen = '0.0.0.0:8008',
     trusted_hosts = { '127.0.0.1', '::1', '172.16.0.0/12', '192.168.0.0/16' },
   },
   
-  -- Processing configuration
   processing = {
     interval = '30s',
-    retention_period = '7 days',
     max_concurrent_rules = 100,
+    batch_size = 1000,
   },
   
-  -- Feature flags
   features = {
     analytics = true,
     ml_patterns = true,
     alerting = true,
+    ip_rotation = true,
+    reputation_management = true,
   },
   
-  -- Alerting configuration
-  alerting = {
-    webhook_url = 'http://monitoring:9093/api/v1/alerts',
-    email_notifications = false,
+  storage = {
+    data_dir = '/var/lib/tsa',
+    log_dir = '/var/log/tsa',
+    max_file_size = '100MB',
+    retention_days = 30,
+  },
+  
+  redis = {
+    host = 'redis',
+    port = 6379,
+    pool_size = 10,
+    timeout = '30s',
   }
 }
 
