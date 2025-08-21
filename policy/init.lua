@@ -1,11 +1,25 @@
 -- Minimal KumoMTA Policy Configuration
--- Simplified for production deployment
+-- Fixed for production deployment
 
 local kumo = require 'kumo'
 
 -- Basic logging configuration
 kumo.on('init', function()
   kumo.set_diagnostic_log_filter('kumod=info')
+  
+  -- Define spool configuration (REQUIRED)
+  kumo.define_spool {
+    name = 'data',
+    path = '/var/spool/kumomta/data',
+    kind = 'RocksDB',
+  }
+  
+  kumo.define_spool {
+    name = 'meta',
+    path = '/var/spool/kumomta/meta',
+    kind = 'RocksDB',
+  }
+  
   print('🚀 KumoMTA initialized with minimal policy')
 end)
 
@@ -13,7 +27,6 @@ end)
 kumo.on('smtp_server_message_received', function(msg)
   -- Accept all messages for now
   print('📧 Message received from: ' .. tostring(msg:from()))
-  return 'accept'
 end)
 
 -- Basic delivery configuration
@@ -36,13 +49,6 @@ kumo.on('get_egress_source', function(source_name)
     name = source_name,
     source_address = '0.0.0.0',
   }
-end)
-
--- Health check endpoint
-kumo.on('http_message_generated', function(msg)
-  if msg:get_meta('queue') == 'health_check' then
-    return 'delivered'
-  end
 end)
 
 print('✅ Minimal KumoMTA policy loaded successfully')
