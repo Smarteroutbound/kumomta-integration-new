@@ -25,6 +25,11 @@ kumo.on('init', function()
     listen = '0.0.0.0:8000',
   }
   
+  -- Health check endpoint
+  kumo.start_esmtp_listener {
+    listen = '0.0.0.0:25',
+  }
+  
   print('🚀 KumoMTA initialized with minimal policy')
 end)
 
@@ -54,6 +59,31 @@ kumo.on('get_egress_source', function(source_name)
     name = source_name,
     source_address = '0.0.0.0',
   }
+end)
+
+-- HTTP endpoints
+kumo.on('http_request', function(request)
+  local path = request:get_path()
+  
+  if path == '/health' then
+    return {
+      status = 200,
+      headers = { ['Content-Type'] = 'application/json' },
+      body = '{"status":"healthy","service":"kumomta"}'
+    }
+  elseif path == '/' then
+    return {
+      status = 200,
+      headers = { ['Content-Type'] = 'application/json' },
+      body = '{"service":"kumomta","version":"2025.08.13"}'
+    }
+  else
+    return {
+      status = 404,
+      headers = { ['Content-Type'] = 'application/json' },
+      body = '{"error":"Not Found"}'
+    }
+  end
 end)
 
 print('✅ Minimal KumoMTA policy loaded successfully')
