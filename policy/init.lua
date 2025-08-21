@@ -20,6 +20,11 @@ kumo.on('init', function()
     kind = 'RocksDB',
   }
   
+  -- HTTP API listener (REQUIRED for health checks)
+  kumo.start_http_listener {
+    listen = '0.0.0.0:8000',
+  }
+  
   print('🚀 KumoMTA initialized with minimal policy')
 end)
 
