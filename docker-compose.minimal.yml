@@ -44,7 +44,7 @@ services:
       - REDIS_PORT=6379
       - KUMO_POLICY=/opt/kumomta/etc/policy/init.lua
       - KUMO_LOG_LEVEL=info
-    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod --api-bind 0.0.0.0:8000"]
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

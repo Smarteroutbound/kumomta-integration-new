@@ -52,7 +52,7 @@ services:
       - KUMO_PERFORMANCE_MODE=high
       - KUMO_API_BIND=0.0.0.0:8000
       - KUMO_ALLOWED_IPS=151.236.251.75,149.28.244.166
-    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod --api-bind 0.0.0.0:8000"]
+    command: ["/bin/sh", "-lc", "install -d -o kumod -g kumod -m 750 /var/spool/kumomta/data /var/spool/kumomta/meta /var/log/kumomta && exec /opt/kumomta/sbin/kumod --policy /opt/kumomta/etc/policy/init.lua --user kumod"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
