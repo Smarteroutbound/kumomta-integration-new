@@ -19,9 +19,10 @@ route:
       repeat_interval: 2h
 
 receivers:
+  # Default receiver - always works
   - name: "django-webhook"
     webhook_configs:
-      - url: "http://151.236.251.75:8000/api/alerts/webhook/"
+      - url: "http://localhost:8000/api/alerts/webhook/"
         send_resolved: true
         http_config:
           basic_auth:
@@ -29,9 +30,10 @@ receivers:
             password: "kumomta-alerts-2024"
         max_alerts: 0
 
+  # Critical alerts receiver
   - name: "django-webhook-critical"
     webhook_configs:
-      - url: "http://151.236.251.75:8000/api/alerts/critical/"
+      - url: "http://localhost:8000/api/alerts/critical/"
         send_resolved: true
         http_config:
           basic_auth:
@@ -39,9 +41,10 @@ receivers:
             password: "kumomta-alerts-2024"
         max_alerts: 0
 
+  # Warning alerts receiver
   - name: "django-webhook-warning"
     webhook_configs:
-      - url: "http://151.236.251.75:8000/api/alerts/warning/"
+      - url: "http://localhost:8000/api/alerts/warning/"
         send_resolved: true
         http_config:
           basic_auth:
