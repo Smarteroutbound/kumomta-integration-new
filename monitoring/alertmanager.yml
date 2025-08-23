@@ -1,60 +1,15 @@
 global:
   resolve_timeout: 5m
-  slack_api_url: ""
 
 route:
-  group_by: ["alertname", "cluster", "service"]
-  group_wait: 30s
-  group_interval: 5m
-  repeat_interval: 4h
-  receiver: "django-webhook"
-  routes:
-    - match:
-        severity: critical
-      receiver: "django-webhook-critical"
-      repeat_interval: 1h
-    - match:
-        severity: warning
-      receiver: "django-webhook-warning"
-      repeat_interval: 2h
+  group_by: ["alertname"]
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: "web.hook"
 
 receivers:
-  # Default receiver - always works
-  - name: "django-webhook"
+  - name: "web.hook"
     webhook_configs:
-      - url: "http://localhost:8000/api/alerts/webhook/"
+      - url: "http://151.236.251.75:8000/api/alerts/webhook/"
         send_resolved: true
-        http_config:
-          basic_auth:
-            username: "alertmanager"
-            password: "kumomta-alerts-2024"
-        max_alerts: 0
-
-  # Critical alerts receiver
-  - name: "django-webhook-critical"
-    webhook_configs:
-      - url: "http://localhost:8000/api/alerts/critical/"
-        send_resolved: true
-        http_config:
-          basic_auth:
-            username: "alertmanager"
-            password: "kumomta-alerts-2024"
-        max_alerts: 0
-
-  # Warning alerts receiver
-  - name: "django-webhook-warning"
-    webhook_configs:
-      - url: "http://localhost:8000/api/alerts/warning/"
-        send_resolved: true
-        http_config:
-          basic_auth:
-            username: "alertmanager"
-            password: "kumomta-alerts-2024"
-        max_alerts: 0
-
-inhibit_rules:
-  - source_match:
-      severity: "critical"
-    target_match:
-      severity: "warning"
-    equal: ["alertname", "dev", "instance"]
