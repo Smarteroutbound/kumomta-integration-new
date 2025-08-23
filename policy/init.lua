@@ -10,9 +10,6 @@ local kumo = require 'kumo'
 
 -- Basic traffic shaping configuration (no TSA dependency)
 local function setup_basic_shaping()
-  -- Load shaping rules from TOML file using correct API
-  local shaping_config = kumo.shaping.load('/opt/kumomta/etc/policy/shaping.toml')
-  
   -- Apply basic rate limiting
   kumo.configure_redis_throttles {
     node = 'redis://redis:6379/',
@@ -24,7 +21,8 @@ local function setup_basic_shaping()
     }
   }
   
-  return shaping_config
+  -- Return nil since we're not loading external shaping config
+  return nil
 end
 
 -- Initialize KumoMTA
@@ -81,7 +79,7 @@ kumo.on('init', function()
   }
   
   -- Setup basic traffic shaping
-  local shaping_config = setup_basic_shaping()
+  setup_basic_shaping()
   
   -- Log successful initialization
   kumo.log.info('KumoMTA initialized with basic traffic shaping')
