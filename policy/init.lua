@@ -35,7 +35,7 @@ kumo.on('init', function()
   kumo.start_esmtp_listener {
     listen = '0.0.0.0:2525',
     hostname = 'kumomta-server',
-    relay_hosts = { '149.28.244.166/32', '127.0.0.0/8' }, -- Allow Mailcow to relay
+    relay_hosts = { '149.28.244.166', '127.0.0.1' }, -- Allow Mailcow to relay
     banner = 'KumoMTA Internal Relay Service',
   }
   
@@ -43,7 +43,7 @@ kumo.on('init', function()
   kumo.start_esmtp_listener {
     listen = '0.0.0.0:25',
     hostname = 'kumomta-server',
-    relay_hosts = { '127.0.0.0/8' }, -- Only localhost for external
+    relay_hosts = { '127.0.0.1' }, -- Only localhost for external
     banner = 'KumoMTA External SMTP Service',
   }
   
@@ -51,14 +51,14 @@ kumo.on('init', function()
   kumo.start_esmtp_listener {
     listen = '0.0.0.0:587',
     hostname = 'kumomta-server', 
-    relay_hosts = { '127.0.0.0/8' }, -- Only localhost for submission
+    relay_hosts = { '127.0.0.1' }, -- Only localhost for submission
     banner = 'KumoMTA Submission Service',
   }
   
   -- HTTP API listener for monitoring (following official pattern)
   kumo.start_http_listener {
     listen = '0.0.0.0:8000',
-    trusted_hosts = { '149.28.244.166/32', '151.236.251.75/32', '127.0.0.0/8' },
+    trusted_hosts = { '149.28.244.166', '151.236.251.75', '127.0.0.1' },
   }
   
   -- Define spool configuration with RocksDB for performance

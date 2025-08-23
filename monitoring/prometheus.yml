@@ -19,18 +19,18 @@ scrape_configs:
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
-    labels:
-      instance: "prometheus"
-      role: "monitoring"
+        labels:
+          instance: "prometheus"
+          role: "monitoring"
 
   # KumoMTA main daemon
   - job_name: "kumod"
     static_configs:
       - targets: ["kumod:8000"]
-    labels:
-      instance: "kumod"
-      role: "email-delivery"
-      service: "kumomta"
+        labels:
+          instance: "kumod"
+          role: "email-delivery"
+          service: "kumomta"
     metrics_path: "/metrics"
     scrape_interval: 15s
 
