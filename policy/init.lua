@@ -81,13 +81,7 @@ kumo.on('init', function()
   -- Setup basic traffic shaping
   setup_basic_shaping()
   
-  -- Log successful initialization
-  kumo.log.info('KumoMTA initialized with basic traffic shaping')
-  kumo.log.info('Redis throttling configured')
-  kumo.log.info('Internal relay listener started on port 2525')
-  kumo.log.info('External SMTP listener started on port 25')
-  kumo.log.info('Submission listener started on port 587')
-  kumo.log.info('HTTP API available on port 8000')
+  -- Initialization complete
 end)
 
 -- Message processing for relay
