@@ -34,16 +34,16 @@ scrape_configs:
     metrics_path: "/metrics"
     scrape_interval: 15s
 
-  # TSA daemon
-  - job_name: "tsa-daemon"
-    static_configs:
-      - targets: ["tsa-daemon:8008"]
-    labels:
-      instance: "tsa-daemon"
-      role: "traffic-shaping"
-      service: "tsa"
-    metrics_path: "/metrics"
-    scrape_interval: 15s
+  # TSA daemon (disabled)
+  # - job_name: "tsa-daemon"
+  #   static_configs:
+  #     - targets: ["tsa-daemon:8008"]
+  #   labels:
+  #     instance: "tsa-daemon"
+  #     role: "traffic-shaping"
+  #     service: "tsa"
+  #   metrics_path: "/metrics"
+  #   scrape_interval: 15s
 
   # Redis
   - job_name: "redis"
@@ -72,7 +72,7 @@ scrape_configs:
     static_configs:
       - targets:
           - http://kumod:8000/health
-          - http://tsa-daemon:8008/health
+          # - http://tsa-daemon:8008/health
           - http://prometheus:9090/-/healthy
           - http://grafana:3000/api/health
     relabel_configs:
@@ -90,8 +90,9 @@ scrape_configs:
       module: [smtp]
     static_configs:
       - targets:
-          - kumod:25
-          - kumod:587
+          - kumod:25 # External SMTP
+          - kumod:2525 # Internal relay
+          - kumod:587 # Submission
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -116,38 +117,38 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox-exporter:9115
 
-  # HAProxy metrics (if enabled)
-  - job_name: "haproxy"
-    static_configs:
-      - targets: ["haproxy:8404"]
-    labels:
-      instance: "haproxy"
-      role: "load-balancer"
-      service: "haproxy"
-    metrics_path: "/metrics"
-    scrape_interval: 15s
+  # HAProxy metrics (disabled)
+  # - job_name: "haproxy"
+  #   static_configs:
+  #     - targets: ["haproxy:8404"]
+  #   labels:
+  #     instance: "haproxy"
+  #     role: "load-balancer"
+  #     service: "haproxy"
+  #   metrics_path: "/metrics"
+  #   scrape_interval: 15s
 
-  # Nginx metrics (if enabled)
-  - job_name: "nginx"
-    static_configs:
-      - targets: ["nginx:80"]
-    labels:
-      instance: "nginx"
-      role: "web-server"
-      service: "nginx"
-    metrics_path: "/nginx_status"
-    scrape_interval: 15s
+  # Nginx metrics (disabled)
+  # - job_name: "nginx"
+  #   static_configs:
+  #     - targets: ["nginx:80"]
+  #   labels:
+  #     instance: "nginx"
+  #     role: "web-server"
+  #     service: "nginx"
+  #   metrics_path: "/nginx_status"
+  #   scrape_interval: 15s
 
-  # Fluentd metrics (if enabled)
-  - job_name: "fluentd"
-    static_configs:
-      - targets: ["fluentd:24231"]
-    labels:
-      instance: "fluentd"
-      role: "log-aggregation"
-      service: "fluentd"
-    metrics_path: "/metrics"
-    scrape_interval: 15s
+  # Fluentd metrics (disabled)
+  # - job_name: "fluentd"
+  #   static_configs:
+  #     - targets: ["fluentd:24231"]
+  #   labels:
+  #     instance: "fluentd"
+  #     role: "log-aggregation"
+  #     service: "fluentd"
+  #   metrics_path: "/metrics"
+  #   scrape_interval: 15s
 
   # Custom KumoMTA business metrics
   - job_name: "kumomta-business"
@@ -171,13 +172,13 @@ scrape_configs:
     metrics_path: "/health"
     scrape_interval: 30s
 
-  # TSA health checks
-  - job_name: "tsa-health"
-    static_configs:
-      - targets: ["tsa-daemon:8008"]
-    labels:
-      instance: "tsa-daemon"
-      role: "health-monitoring"
-      service: "tsa"
-    metrics_path: "/health"
-    scrape_interval: 30s
+  # TSA health checks (disabled)
+  # - job_name: "tsa-health"
+  #   static_configs:
+  #     - targets: ["tsa-daemon:8008"]
+  #   labels:
+  #     instance: "tsa-daemon"
+  #     role: "health-monitoring"
+  #     service: "tsa"
+  #   metrics_path: "/health"
+  #   scrape_interval: 30s

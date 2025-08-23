@@ -17,34 +17,46 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
 
-  # Main KumoMTA daemon
+  # Main KumoMTA daemon (following official pattern)
   kumod:
     image: ghcr.io/kumocorp/kumomta:main
     container_name: kumod-enterprise
     hostname: kumod
     volumes:
       - ./policy:/opt/kumomta/etc/policy:ro
+
       - kumo_data_spool:/var/spool/kumomta/data
       - kumo_meta_spool:/var/spool/kumomta/meta
       - kumo_logs:/var/log/kumomta
     ports:
-      - "0.0.0.0:25:25"      # External SMTP
-      - "0.0.0.0:2525:2525"  # Internal relay for Mailcow
-      - "0.0.0.0:587:587"    # Submission
-      - "0.0.0.0:8000:8000"  # HTTP API
+      - "0.0.0.0:25:25"
+      - "0.0.0.0:587:587"
+      - "0.0.0.0:8000:8000"
     depends_on:
       redis:
         condition: service_healthy
+      tsa:
+        condition: service_healthy
     restart: unless-stopped
+    
+  # TSA daemon for traffic shaping automation (official pattern)
+  tsa:
+    image: ghcr.io/kumocorp/kumomta:main
+    container_name: kumo-tsa
+    hostname: tsa
+    command: runuser -u kumod -- /opt/kumomta/sbin/tsa-daemon --policy /opt/kumomta/etc/policy/tsa_init.lua
+    volumes:
+      - ./policy:/opt/kumomta/etc/policy:ro
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["/opt/kumomta/sbin/validate-shaping", "/opt/kumomta/etc/policy/shaping.toml"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -60,31 +72,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G
-
-  # Traffic Shaping Automation (TSA) daemon - DISABLED due to crashes
-  # tsa-daemon:
-  #   image: ghcr.io/kumocorp/kumomta:main
-  #   container_name: kumo-tsa-daemon
-  #   command: runuser -u kumod -- /opt/kumomta/sbin/tsa-daemon --policy /opt/kumomta/etc/policy/tsa_init.lua
-  #   volumes:
-  #     - ./policy:/opt/kumomta/etc/policy
-  #     - tsa_data:/var/lib/tsa
-  #     - tsa_logs:/var/log/tsa
-  #   ports:
-  #     - "8008:8008"
-  #   restart: unless-stopped
-  #   environment:
-  #     - TSA_LOG_LEVEL=info
-  #     - TSA_DATA_DIR=/var/lib/tsa
-  #     - TSA_LOG_DIR=/var/log/tsa
 
   # Prometheus for metrics collection
   prometheus:
@@ -93,21 +80,17 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.retention.time=90d'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
       - '--web.enable-lifecycle'
+      - '--web.external-url=http://89.117.75.190:9090'
     restart: unless-stopped
     depends_on:
       - kumod
-  #     - '--storage.tsdb.path=/prometheus'
-  #     - '--storage.tsdb.retention.time=90d'
-  #     - '--web.enable-lifecycle'
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kumod
 
   # Grafana for visualization
   grafana:
@@ -117,23 +100,16 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ADMIN_PASSWORD=kumomta123
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://89.117.75.190:3000
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     restart: unless-stopped
     depends_on:
       - prometheus
-
-  # Alertmanager for alerting - DISABLED
-  # alertmanager:
-  #   image: prom/alertmanager:latest
-  #   container_name: kumo-alertmanager
-  #   ports:
-  #     - "9093:9093"
-  #   volumes:
-  #     - alertmanager_data:/alertmanager
-  #   restart: unless-stopped
 
   # Node Exporter for system metrics
   node-exporter:
@@ -150,11 +126,6 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Redis Exporter for Redis metrics
   redis-exporter:
@@ -164,15 +135,9 @@ services:
       - "9121:9121"
     environment:
       - REDIS_ADDR=redis://redis:6379
-      - REDIS_PASSWORD=
     restart: unless-stopped
     depends_on:
       - redis
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9121/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Blackbox Exporter for external monitoring
   blackbox-exporter:
@@ -181,52 +146,10 @@ services:
     ports:
       - "9115:9115"
     volumes:
-      - ./monitoring/blackbox.yml:/config/blackbox.yml
+      - ./monitoring/blackbox.yml:/config/blackbox.yml:ro
     command:
       - '--config.file=/config/blackbox.yml'
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9115/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # HAProxy for IP rotation - DISABLED due to config issues
-  # haproxy:
-  #   image: haproxy:2.8-alpine
-  #   container_name: kumo-haproxy
-  #   ports:
-  #     - "8080:8080"
-  #     - "8404:8404"
-  #   volumes:
-  #     - ./monitoring/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kumod
-
-  # Nginx for load balancing - DISABLED
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: kumo-nginx
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./monitoring/nginx.conf:/etc/nginx/nginx.conf:ro
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kumod
-
-  # Log aggregation with Fluentd - DISABLED
-  # fluentd:
-  #   image: fluent/fluentd:v1.16-1
-  #   container_name: kumo-fluentd
-  #   volumes:
-  #     - kumo_logs:/var/log/kumomta:ro
-  #     - fluentd_data:/fluentd/log
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - kumod
 
 volumes:
   redis_data:
@@ -237,17 +160,9 @@ volumes:
     driver: local
   kumo_logs:
     driver: local
-  tsa_data:
-    driver: local
-  tsa_logs:
-    driver: local
   prometheus_data:
     driver: local
   grafana_data:
-    driver: local
-  alertmanager_data:
-    driver: local
-  fluentd_data:
     driver: local
 
 networks:
