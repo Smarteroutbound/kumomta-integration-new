@@ -1,291 +1,57 @@
 global:
   resolve_timeout: 5m
-  smtp_smarthost: 'localhost:25'
-  smtp_from: 'alertmanager@smarteroutbound.com'
-  smtp_require_tls: false
+  slack_api_url: ""
 
 route:
-  group_by: ['alertname', 'cluster', 'service']
+  group_by: ["alertname", "cluster", "service"]
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
-  receiver: 'web.hook'
+  receiver: "django-webhook"
   routes:
-    # Critical alerts - immediate notification
     - match:
         severity: critical
-      receiver: 'critical-alerts'
+      receiver: "django-webhook-critical"
       repeat_interval: 1h
-      group_wait: 10s
-      group_interval: 1m
-    
-    # Warning alerts - less frequent
     - match:
         severity: warning
-      receiver: 'warning-alerts'
-      repeat_interval: 4h
-      group_wait: 1m
-      group_interval: 5m
-    
-    # Email delivery alerts - high priority
-    - match:
-        service: email_delivery
-      receiver: 'email-delivery-alerts'
+      receiver: "django-webhook-warning"
       repeat_interval: 2h
-      group_wait: 30s
-      group_interval: 2m
-    
-    # TSA alerts - important for automation
-    - match:
-        service: tsa
-      receiver: 'tsa-alerts'
-      repeat_interval: 1h
-      group_wait: 30s
-      group_interval: 1m
-    
-    # Business metrics alerts - business hours only
-    - match:
-        service: business_metrics
-      receiver: 'business-alerts'
-      repeat_interval: 6h
-      group_wait: 5m
-      group_interval: 10m
-    
-    # Security alerts - immediate attention
-    - match:
-        service: security
-      receiver: 'security-alerts'
-      repeat_interval: 30m
-      group_wait: 10s
-      group_interval: 1m
-    
-    # System health alerts - infrastructure team
-    - match:
-        service: system_health
-      receiver: 'infrastructure-alerts'
-      repeat_interval: 2h
-      group_wait: 1m
-      group_interval: 3m
-
-inhibit_rules:
-  # Inhibit critical alerts when service is down
-  - source_match:
-      severity: 'critical'
-      service: 'service_health'
-    target_match:
-      severity: 'critical'
-    equal: ['instance']
-  
-  # Inhibit email delivery alerts when TSA is down
-  - source_match:
-      severity: 'critical'
-      service: 'tsa'
-    target_match:
-      service: 'email_delivery'
-    equal: ['instance']
-  
-  # Inhibit connection alerts when service is down
-  - source_match:
-      severity: 'critical'
-      service: 'service_health'
-    target_match:
-      service: 'connections'
-    equal: ['instance']
 
 receivers:
-  - name: 'web.hook'
+  - name: "django-webhook"
     webhook_configs:
-      - url: 'http://127.0.0.1:5001/'
+      - url: "http://151.236.251.75:8000/api/alerts/webhook/"
         send_resolved: true
         http_config:
-          follow_redirects: true
-          tls_config:
-            insecure_skip_verify: true
+          basic_auth:
+            username: "alertmanager"
+            password: "kumomta-alerts-2024"
+        max_alerts: 0
 
-  - name: 'critical-alerts'
+  - name: "django-webhook-critical"
     webhook_configs:
-      - url: 'http://127.0.0.1:5001/critical'
+      - url: "http://151.236.251.75:8000/api/alerts/critical/"
         send_resolved: true
-    email_configs:
-      - to: 'admin@smarteroutbound.com'
-        send_resolved: true
-        headers:
-          subject: '🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>🚨 Critical Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Service:</strong> {{ .GroupLabels.service }}</p>
-          <p><strong>Instance:</strong> {{ .GroupLabels.instance }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Time:</strong> {{ .StartsAt }}</p>
+        http_config:
+          basic_auth:
+            username: "alertmanager"
+            password: "kumomta-alerts-2024"
+        max_alerts: 0
 
-  - name: 'warning-alerts'
+  - name: "django-webhook-warning"
     webhook_configs:
-      - url: 'http://127.0.0.1:5001/warning'
+      - url: "http://151.236.251.75:8000/api/alerts/warning/"
         send_resolved: true
-    email_configs:
-      - to: 'ops@smarteroutbound.com'
-        send_resolved: true
-        headers:
-          subject: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>⚠️ Warning Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Service:</strong> {{ .GroupLabels.service }}</p>
-          <p><strong>Instance:</strong> {{ .GroupLabels.instance }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Time:</strong> {{ .StartsAt }}</p>
+        http_config:
+          basic_auth:
+            username: "alertmanager"
+            password: "kumomta-alerts-2024"
+        max_alerts: 0
 
-  - name: 'email-delivery-alerts'
-    webhook_configs:
-      - url: 'http://127.0.0.1:5001/email-delivery'
-        send_resolved: true
-    email_configs:
-      - to: 'delivery-team@smarteroutbound.com'
-        send_resolved: true
-        headers:
-          subject: '📧 Email Delivery Alert: {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>📧 Email Delivery Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Instance:</strong> {{ .GroupLabels.instance }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Time:</strong> {{ .StartsAt }}</p>
-
-  - name: 'tsa-alerts'
-    webhook_configs:
-      - url: 'http://127.0.0.1:5001/tsa'
-        send_resolved: true
-    email_configs:
-      - to: 'automation-team@smarteroutbound.com'
-        send_resolved: true
-        headers:
-          subject: '🤖 TSA Alert: {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>🤖 TSA Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Instance:</strong> {{ .GroupLabels.instance }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Time:</strong> {{ .StartsAt }}</p>
-
-  - name: 'business-alerts'
-    webhook_configs:
-      - url: 'http://127.0.0.1:5001/business'
-        send_resolved: true
-    email_configs:
-      - to: 'business@smarteroutbound.com'
-        send_resolved: true
-        headers:
-          subject: '📊 Business Alert: {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>📊 Business Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Instance:</strong> {{ .GroupLabels.instance }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Time:</strong> {{ .StartsAt }}</p>
-
-  - name: 'security-alerts'
-    webhook_configs:
-      - url: 'http://127.0.0.1:5001/security'
-        send_resolved: true
-    email_configs:
-      - to: 'security@smarteroutbound.com'
-        send_resolved: true
-        headers:
-          subject: '🔒 Security Alert: {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>🔒 Security Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Instance:</strong> {{ .GroupLabels.instance }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Time:</strong> {{ .StartsAt }}</p>
-
-  - name: 'infrastructure-alerts'
-    webhook_configs:
-      - url: 'http://127.0.0.1:5001/infrastructure'
-        send_resolved: true
-    email_configs:
-      - to: 'infrastructure@smarteroutbound.com'
-        send_resolved: true
-        headers:
-          subject: '🏗️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
-        html: |
-          <h2>🏗️ Infrastructure Alert</h2>
-          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
-          <p><strong>Instance:</strong> {{ .GroupLabels.instance }}</p>
-          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
-          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
-          <p><strong>Time:</strong> {{ .StartsAt }}</p>
-
-  # Slack notifications (if configured)
-  - name: 'slack-notifications'
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
-        channel: '#alerts'
-        title: '🚨 Alert: {{ .GroupLabels.alertname }}'
-        text: |
-          *Alert:* {{ .GroupLabels.alertname }}
-          *Service:* {{ .GroupLabels.service }}
-          *Instance:* {{ .GroupLabels.instance }}
-          *Summary:* {{ .CommonAnnotations.summary }}
-          *Description:* {{ .CommonAnnotations.description }}
-        send_resolved: true
-        actions:
-          - type: button
-            text: 'View in Grafana'
-            url: 'http://localhost:3000/d/kumomta/kumomta-overview'
-
-  # PagerDuty integration (if configured)
-  - name: 'pagerduty-critical'
-    pagerduty_configs:
-      - routing_key: 'YOUR_PAGERDUTY_ROUTING_KEY'
-        description: '{{ .GroupLabels.alertname }} - {{ .CommonAnnotations.summary }}'
-        severity: '{{ if eq .GroupLabels.severity "critical" }}critical{{ else }}warning{{ end }}'
-        class: '{{ .GroupLabels.service }}'
-        group: '{{ .GroupLabels.instance }}'
-        details:
-          firing: '{{ template "pagerduty.kumomta.firing" . }}'
-          num_firing: '{{ .Alerts.Firing | len }}'
-          num_resolved: '{{ .Alerts.Resolved | len }}'
-          resolved: '{{ template "pagerduty.kumomta.resolved" . }}'
-
-templates:
-  - '/etc/alertmanager/template/*.tmpl'
-
-# Time-based routing (business hours vs off-hours)
-time_intervals:
-  - name: business_hours
-    time_intervals:
-      - weekdays: ['monday:friday']
-        times:
-          - start_time: 09:00
-            end_time: 17:00
-        location: 'America/New_York'
-  
-  - name: off_hours
-    time_intervals:
-      - weekdays: ['monday:friday']
-        times:
-          - start_time: 17:00
-            end_time: 09:00
-        location: 'America/New_York'
-      - weekdays: ['saturday', 'sunday']
-
-# Route based on time
-route:
-  group_by: ['alertname', 'cluster', 'service']
-  group_wait: 30s
-  group_interval: 5m
-  repeat_interval: 4h
-  receiver: 'web.hook'
-  time_intervals:
-    - name: business_hours
-      receiver: 'business-hours-team'
-    - name: off_hours
-      receiver: 'on-call-team'
+inhibit_rules:
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    equal: ["alertname", "dev", "instance"]

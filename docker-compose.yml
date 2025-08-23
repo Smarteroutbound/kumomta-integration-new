@@ -125,15 +125,19 @@ services:
     depends_on:
       - prometheus
 
-  # Alertmanager for alerting - DISABLED
-  # alertmanager:
-  #   image: prom/alertmanager:latest
-  #   container_name: kumo-alertmanager
-  #   ports:
-  #     - "9093:9093"
-  #   volumes:
-  #     - alertmanager_data:/alertmanager
-  #   restart: unless-stopped
+  # Alertmanager for alerting
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: kumo-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
 
   # Node Exporter for system metrics
   node-exporter:
