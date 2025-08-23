@@ -99,9 +99,6 @@ kumo.on('smtp_server_message_received', function(msg)
   msg:set_meta('tenant', 'mailcow')
   msg:set_meta('campaign', 'relay')
   
-  -- Import any scheduling headers
-  msg:import_scheduling_header('X-Schedule', true)
-  
   -- Queue for delivery
   msg:save()
 end)
@@ -137,12 +134,8 @@ end)
 
 -- Bounce classification for proper handling
 kumo.on('get_bounce_classifier', function()
-  return kumo.make_bounce_classifier {
-    files = {
-      -- Use built-in bounce classification rules
-    },
-    default_action = 'defer',
-  }
+  -- Use default bounce classification
+  return nil
 end)
 
 -- Log delivery events
@@ -165,42 +158,25 @@ kumo.on('http_request', function(request)
     return {
       status = 200,
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        status = 'healthy',
-        service = 'kumomta',
-        timestamp = os.date('%Y-%m-%d %H:%M:%S'),
-        version = kumo.version(),
-      })
+      body = '{"status":"healthy","service":"kumomta","timestamp":"' .. os.date('%Y-%m-%d %H:%M:%S') .. '"}'
     }
   elseif path == '/' then
     return {
       status = 200, 
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        service = 'kumomta',
-        status = 'running',
-        role = 'email-relay',
-      })
+      body = '{"service":"kumomta","status":"running","role":"email-relay"}'
     }
   elseif path == '/api/v1/status' then
     return {
       status = 200,
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        queue_status = 'active',
-        delivery_rate = 'normal', 
-        system = 'operational',
-      })
+      body = '{"queue_status":"active","delivery_rate":"normal","system":"operational"}'
     }
   elseif path == '/api/v1/queue/status' then
     return {
       status = 200,
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        active_queue = 0,
-        deferred_queue = 0,
-        total_processed = 0,
-      })
+      body = '{"active_queue":0,"deferred_queue":0,"total_processed":0}'
     }
   elseif path == '/metrics' then
     return {
@@ -221,40 +197,25 @@ kumomta_connections_total 0
     return {
       status = 200,
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        delivered = 0,
-        bounced = 0,
-        deferred = 0,
-        rate = '0/min',
-      })
+      body = '{"delivered":0,"bounced":0,"deferred":0,"rate":"0/min"}'
     }
   elseif path == '/api/v1/ip/status' then
     return {
       status = 200,
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        active_ips = { '89.117.75.190' },
-        rotation_enabled = false,
-      })
+      body = '{"active_ips":["89.117.75.190"],"rotation_enabled":false}'
     }
-  elseif path == '/api/v1/metrics/performance' then
+  elseif path == '/api/v1/metrics/status' then
     return {
       status = 200,
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        cpu_usage = 'normal',
-        memory_usage = 'normal',
-        disk_usage = 'normal',
-      })
+      body = '{"cpu_usage":"normal","memory_usage":"normal","disk_usage":"normal"}'
     }
   else
     return {
       status = 404,
       headers = { ['Content-Type'] = 'application/json' },
-      body = kumo.json_encode({
-        error = 'Endpoint not found',
-        path = path,
-      })
+      body = '{"error":"Endpoint not found","path":"' .. path .. '"}'
     }
   end
 end)
